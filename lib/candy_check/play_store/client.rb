@@ -1,3 +1,6 @@
+require 'google/apis/androidpublisher_v2'
+require 'multi_json'
+
 module CandyCheck
   module PlayStore
     # A client which uses the official Google API SDK to authenticate
@@ -11,17 +14,12 @@ module CandyCheck
     #   # ... multiple calls from now on
     #   client.verify('my.bundle', 'product_1', 'another-long-token')
     class Client
-      # Error thrown if the discovery of the API wasn't successful
-      class DiscoveryError < RuntimeError; end
-
       # API endpoint
       API_URL      = 'https://accounts.google.com/o/oauth2/token'.freeze
       # API scope for Android services
       API_SCOPE    = 'https://www.googleapis.com/auth/androidpublisher'.freeze
-      # API discovery namespace
-      API_DISCOVER = 'androidpublisher'.freeze
-      # API version
-      API_VERSION  = 'v2'.freeze
+      # Alias from Google
+      GoogleApi = Google::Apis::AndroidpublisherV2
 
       # Initializes a client using a configuration.
       # @param config [ClientConfig]
@@ -33,11 +31,10 @@ module CandyCheck
       # by fetching an access token.
       # If the config has a cache_file the client tries to load discovery
       def boot!
-        self.api_client = Google::APIClient.new(
-          application_name:    config.application_name,
-          application_version: config.application_version
-        )
-        discover!
+        self.api_client = GoogleApi::AndroidPublisherService.new.tap do |client|
+          client.client_options.application_name = config.application_name
+          client.client_options.application_version = config.application_version
+        end
         authorize!
       end
 
@@ -48,29 +45,16 @@ module CandyCheck
       # @param token [String] the purchase token
       # @return [Hash] result of the API call
       def verify(package, product_id, token)
-        api_client.execute(
-          api_method: rpc.purchases.products.get,
-          parameters: {
-            'packageName' => package,
-            'productId'   => product_id,
-            'token'       => token
-          }
-        ).data.to_hash
+        response = api_client.get_purchase_product(package, product_id, token)
+        MultiJson.load(response.to_json)
+      rescue Google::Apis::Error => error
+        return {} unless error.body
+        MultiJson.load(error.body)
       end
 
       private
 
-      attr_accessor :config, :api_client, :rpc
-
-      def discover!
-        self.rpc = load_discover_dump || request_discover
-        validate_rpc!
-        write_discover_dump
-      end
-
-      def request_discover
-        api_client.discovered_api(API_DISCOVER, API_VERSION)
-      end
+      attr_accessor :config, :api_client
 
       def authorize!
         api_client.authorization = Signet::OAuth2::Client.new(
@@ -81,21 +65,6 @@ module CandyCheck
           signing_key:          config.api_key
         )
         api_client.authorization.fetch_access_token!
-      end
-
-      def validate_rpc!
-        return if rpc.purchases.products.get
-        raise DiscoveryError, 'Unable to get the API discovery'
-      rescue NoMethodError
-        raise DiscoveryError, 'Unable to get the API discovery'
-      end
-
-      def load_discover_dump
-        DiscoveryRepository.new(config.cache_file).load
-      end
-
-      def write_discover_dump
-        DiscoveryRepository.new(config.cache_file).save(rpc)
       end
     end
   end

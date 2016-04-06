@@ -87,8 +87,7 @@ config = CandyCheck::PlayStore::Config.new(
   application_version: '1.0',
   issuer: 'abcdefg@developer.gserviceaccount.com',
   key_file: 'local/google.p12',
-  key_secret: 'notasecret',
-  cache_file: 'tmp/candy_check_play_store_cache'
+  key_secret: 'notasecret'
 )
 verifier = CandyCheck::PlayStore::Verifier.new(config)
 verifier.boot!

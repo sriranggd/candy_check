@@ -10,10 +10,9 @@ require 'minitest/around/spec'
 require 'webmock/minitest'
 
 require_relative 'support/with_fixtures'
-require_relative 'support/with_temp_file'
 require_relative 'support/with_command'
 
-ENV['DEBUG'] && Google::APIClient.logger.level = Logger::DEBUG
+ENV['DEBUG'] && Google::Apis.logger.level = Logger::DEBUG
 
 module MiniTest
   module Assertions

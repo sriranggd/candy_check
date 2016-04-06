@@ -1,3 +1,5 @@
+require 'google/api_client/auth/key_utils'
+
 module CandyCheck
   module PlayStore
     # Configure the usage of the official Google API SDK client
@@ -6,6 +8,7 @@ module CandyCheck
       attr_reader :application_name
       # @return [String] your application's version
       attr_reader :application_version
+      # @deprecated
       # @return [String] an optional file to cache the discovery API result
       attr_reader :cache_file
       # @return [String] your issuer's service account e-mail
@@ -21,7 +24,6 @@ module CandyCheck
       #   ClientConfig.new(
       #     application_name: 'YourApplication',
       #     application_version: '1.0',
-      #     cache_file: 'tmp/google_api_cache',
       #     issuer: 'abcdefg@developer.gserviceaccount.com',
       #     key_file: 'local/google.p12',
       #     key_secret: 'notasecret'
